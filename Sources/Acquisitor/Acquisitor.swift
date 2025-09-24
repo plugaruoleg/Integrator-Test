@@ -13,12 +13,22 @@ import IHProgressHUD
 
 import Analytical
 import IntegratorDefaults
+import StoreKit
 
 public class Acquisitor {
-    public static let shared = Acquisitor()
-    private let analytics = AnalyticalClient()
+    enum SubscriptionPeriod: Int {
+        case day = 0
+        case week = 1
+        case month = 2
+        case year = 3
+    }
     
+    public static let shared = Acquisitor()
+    public var products: Set<SKProduct> = Set()
+    
+    private let analytics = AnalyticalClient()
     private var productIdentifiers: [String] = []
+    private var subsriptionPerion: SubscriptionPeriod!
     
     public var isAcquired: Bool {
         IntegratorDefaults.isAqcuired
@@ -26,12 +36,14 @@ public class Acquisitor {
     
     private init() {
         prepareTransactionObserver()
+        subsriptionPerion = SubscriptionPeriod(rawValue: IntegratorDefaults.subscriptionPeriod ?? 0)
     }
     
     public func retrieve(products productIds: [String], completion: @escaping (Bool) -> Void) {
         SwiftyStoreKit.retrieveProductsInfo(Set(productIds)) { [weak self] result in
             guard result.error == nil else {
                 self?.handleStoreKitError(result.error)
+                
                 completion(false)
                 return
             }
@@ -41,6 +53,7 @@ public class Acquisitor {
             }
             
             self?.productIdentifiers = result.retrievedProducts.map { $0.productIdentifier }
+            self?.products = result.retrievedProducts
             
             result.retrievedProducts.forEach { product in
                 debugPrint("❕Product retrieved:", product.productIdentifier, product.price)
@@ -53,6 +66,7 @@ public class Acquisitor {
     public func acquire(product identifier: String, completion: @escaping (PurchaseDetails?) -> Void) {
         IHProgressHUD.show()
         SwiftyStoreKit.purchaseProduct(identifier) { [weak self] result in
+            guard let self else { return }
             switch result {
             case .deferred(let details), .success(let details):
                 
@@ -62,7 +76,7 @@ public class Acquisitor {
                 )
                 transaction.save()
                 
-                self?.analytics.trackEvents(
+                self.analytics.trackEvents(
                     productId: identifier,
                     productPrice: Double(truncating: details.product.price),
                     transactionId: transaction.transactionIdentifier ?? "Unknown",
@@ -71,12 +85,26 @@ public class Acquisitor {
                     trackingIdentifier: IntegratorDefaults.integrationTrackingID
                 )
                 
+                if let numberOfUnits = details.product.subscriptionPeriod?.numberOfUnits,
+                    let purchasedDate = details.transaction.transactionDate {
+                    self.subsriptionPerion = SubscriptionPeriod(rawValue: numberOfUnits) ?? .day
+                    print("subsriptionPerion=\(String(describing: self.subsriptionPerion))")
+                    
+                    let expiredSubscriptionDate = self.getExpiredSubscriptionDate(purchasedDate: purchasedDate)
+                    print("expiredSubscriptionDate=\(String(describing: expiredSubscriptionDate))")
+                    IntegratorDefaults.expiredDate = expiredSubscriptionDate
+                    IntegratorDefaults.subscriptionPeriod = numberOfUnits
+                }
+                
                 IntegratorDefaults.isAqcuired = true
+                IntegratorDefaults.boughtProductId = details.productId
+                
                 completion(details)
             case .error(let error):
                 IntegratorDefaults.isAqcuired = false
+                IntegratorDefaults.boughtProductId = nil
                 completion(nil)
-                self?.handleStoreKitError(error)
+                self.handleStoreKitError(error)
             }
             
             IHProgressHUD.dismiss()
@@ -180,6 +208,16 @@ extension Acquisitor {
             purchases.forEach { purchase in
                 switch purchase.transaction.transactionState {
                 case .purchased, .restored:
+                    if let transactionDate = purchase.transaction.transactionDate {
+                        let expiredSubscriptionDate = self.getExpiredSubscriptionDate(purchasedDate: transactionDate)
+                        if IntegratorDefaults.expiredDate < expiredSubscriptionDate {
+                            IntegratorDefaults.expiredDate = expiredSubscriptionDate
+                            if expiredSubscriptionDate > Date() {
+                                IntegratorDefaults.isAqcuired = true
+                            }
+                        }
+                    }
+                   
                     guard purchase.needsFinishTransaction else { return }
                     SwiftyStoreKit.finishTransaction(purchase.transaction)
                 default:
@@ -192,5 +230,27 @@ extension Acquisitor {
     private func handleStoreKitError(_ error: Error?) {
         guard let error else { return }
         debugPrint(error)
+    }
+}
+
+extension Acquisitor {
+    
+    private func getExpiredSubscriptionDate(purchasedDate: Date) -> Date {
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.current
+        calendar.locale = Locale.current
+        
+        switch subsriptionPerion {
+        case .day:
+            return calendar.date(byAdding: .day, value: 1, to: purchasedDate) ?? purchasedDate
+        case .week:
+            return calendar.date(byAdding: .weekOfYear, value: 1, to: purchasedDate) ?? purchasedDate
+        case .month:
+            return calendar.date(byAdding: .month, value: 1, to: purchasedDate) ?? purchasedDate
+        case .year:
+            return calendar.date(byAdding: .year, value: 1, to: purchasedDate) ?? purchasedDate
+        default:
+            return calendar.date(byAdding: .day, value: 1, to: purchasedDate) ?? purchasedDate
+        }
     }
 }

@@ -37,8 +37,8 @@ fileprivate enum FirebaseRemoteConfigKey: String, CaseIterable {
     }
 }
 
-class FirebaseWrapper {
-    static var shared = FirebaseWrapper()
+public class FirebaseWrapper {
+    public static var shared = FirebaseWrapper()
     
     private var config: RemoteConfig
     
@@ -84,7 +84,7 @@ class FirebaseWrapper {
         (config[FirebaseRemoteConfigKey.introProduct.rawValue].stringValue) ?? (FirebaseRemoteConfigKey.introProduct.defaultValue as! String)
     }
     
-    var products: [String] {
+    public var products: [String] {
         guard let data = config[
             FirebaseRemoteConfigKey.dynamicProducts.rawValue
         ].jsonValue as? [String] else {

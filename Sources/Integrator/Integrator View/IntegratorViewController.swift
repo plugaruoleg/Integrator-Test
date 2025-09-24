@@ -11,6 +11,7 @@ import SwiftUI
 import UIKit
 import WebKit
 
+import IHProgressHUD
 import Acquisitor
 import IntegratorDefaults
 
@@ -34,13 +35,18 @@ class IntegratorViewController: UIViewController {
         super.viewDidLoad()
         
         view.addSubview(web)
+        web.navigationDelegate = self
+        
         setWebConstraints()
         handleUrl(started: false)
     }
     
     func startAcquisition(for identifier: String) {
         Acquisitor.shared.acquire(product: identifier) { [weak self] details in
-            guard details != nil else { return }
+            guard details != nil else {
+                IHProgressHUD.dismiss()
+                return
+            }
             
             self?.handleUrl(started: true)
         }
@@ -142,10 +148,10 @@ extension IntegratorViewController {
     
     private func setWebConstraints() {
         web.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint(item: web, attribute: NSLayoutConstraint.Attribute.centerX, relatedBy: NSLayoutConstraint.Relation.equal, toItem: view, attribute: NSLayoutConstraint.Attribute.centerX, multiplier: 1, constant: 0).isActive = true
-        NSLayoutConstraint(item: web, attribute: NSLayoutConstraint.Attribute.centerY, relatedBy: NSLayoutConstraint.Relation.equal, toItem: view, attribute: NSLayoutConstraint.Attribute.centerY, multiplier: 1, constant: 0).isActive = true
-        NSLayoutConstraint(item: web, attribute: NSLayoutConstraint.Attribute.width, relatedBy: NSLayoutConstraint.Relation.equal, toItem: nil, attribute: NSLayoutConstraint.Attribute.notAnAttribute, multiplier: 1, constant: 100).isActive = true
-        NSLayoutConstraint(item: web, attribute: NSLayoutConstraint.Attribute.height, relatedBy: NSLayoutConstraint.Relation.equal, toItem: nil, attribute: NSLayoutConstraint.Attribute.notAnAttribute, multiplier: 1, constant: 100).isActive = true
+        NSLayoutConstraint(item: web, attribute: .centerX, relatedBy: .equal, toItem: view, attribute: .centerX, multiplier: 1, constant: 0).isActive = true
+        NSLayoutConstraint(item: web, attribute: .centerY, relatedBy: .equal, toItem: view, attribute: .centerY, multiplier: 1, constant: 0).isActive = true
+        NSLayoutConstraint(item: web, attribute: .width, relatedBy: .equal, toItem: view, attribute: .width, multiplier: 1, constant: 0).isActive = true
+        NSLayoutConstraint(item: web, attribute: .height, relatedBy: .equal, toItem: view, attribute: .height, multiplier: 1, constant: 0).isActive = true
     }
 }
 

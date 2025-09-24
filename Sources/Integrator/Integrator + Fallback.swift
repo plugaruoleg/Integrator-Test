@@ -37,7 +37,5 @@ extension Integrator {
         case .dynamicFallback:
             debugPrint("User is recording")
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { debugPrint(Int("")!) }
     }
 }

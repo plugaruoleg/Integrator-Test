@@ -17,6 +17,9 @@ public struct IntegratorDefaults {
         static var campaign = "integration_campaign"
         static var tracking = "integration_tracking"
         static var acquired = "integration_acquired"
+        static var boughtProductId = "bought_productId"
+        static var expiredDate = "expired_date"
+        static var subscriptionPeriod = "subscription_period"
     }
     
     public static var integrationSessionStart: Date {
@@ -49,4 +52,26 @@ public struct IntegratorDefaults {
         get { defaults.bool(forKey: Keys.acquired) }
         set { defaults.set(newValue, forKey: Keys.acquired) }
     }
+    
+    public static var boughtProductId: String? {
+        get { defaults.string(forKey: Keys.boughtProductId) }
+        set { defaults.set(newValue, forKey: Keys.boughtProductId) }
+    }
+    
+    public static var expiredDate: Date {
+        set { defaults.set(newValue, forKey: Keys.expiredDate) }
+        get {
+            guard let date = defaults.object(forKey: Keys.expiredDate) as? Date else {
+                return Date()
+            }
+            
+            return date
+        }
+    }
+    
+    public static var subscriptionPeriod: Int? {
+        get { defaults.integer(forKey: Keys.subscriptionPeriod) }
+        set { defaults.set(newValue, forKey: Keys.subscriptionPeriod) }
+    }
 }
+

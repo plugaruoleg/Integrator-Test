@@ -69,7 +69,7 @@ public class Integrator: NSObject {
                 
                 switch state {
                 case .integrated:
-                    self.app.keyWindow?.rootViewController = UIHostingController(rootView: IntegratorViewRepresentable(integrator: self))
+                    self.app.keyWindow?.rootViewController = UIHostingController(rootView: self.parent)
                 case .nonIntegrated:
                     self.app.keyWindow?.rootViewController = UIHostingController(rootView: self.parent)
                 }
