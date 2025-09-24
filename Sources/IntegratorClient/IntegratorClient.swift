@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import IntegratorDefaults
+//import IntegratorDefaults
 
 public class IntegratorClient {
     public static var shared = IntegratorClient()
@@ -29,7 +29,7 @@ public class IntegratorClient {
         guard let url = URL(string: "https://analytics.nomadroot.com/callback/status") else { return }
         let sessionDateComponents = Calendar.current.dateComponents(
             [.second],
-            from: IntegratorDefaults.integrationSessionStart,
+            from: Date(),
             to: Date()
         )
         let sessionDuration = sessionDateComponents.second ?? 0
