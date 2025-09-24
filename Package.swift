@@ -5,12 +5,16 @@ import PackageDescription
 let package = Package(
     name: "Integrator",
     platforms: [
-        .iOS(.v14),
+        .iOS(.v16),
     ],
     products: [
         .library(
             name: "Integrator",
             targets: ["Integrator"]
+        ),
+        .library(
+            name: "IntegratorDefaults",
+            targets: ["IntegratorDefaults"]
         ),
         .library(
             name: "Acquisitor",
@@ -20,10 +24,7 @@ let package = Package(
             name: "Analytical",
             targets: ["Analytical"]
         ),
-        .library(
-            name: "IntegratorDefaults",
-            targets: ["IntegratorDefaults"]
-        ),
+        
         .library(
             name: "IntegratorClient",
             targets: ["IntegratorClient"]
@@ -36,7 +37,7 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework",
-            .exact("6.4.0")
+            .upToNextMajor(from: "6.4.0")
         ),
         .package(
             url: "https://github.com/bizz84/SwiftyStoreKit.git",
@@ -58,6 +59,7 @@ let package = Package(
         ),
         .target(
             name: "IntegratorClient",
+            dependencies: ["IntegratorDefaults"],
             path: "Sources/IntegratorClient"
         ),
         .target(

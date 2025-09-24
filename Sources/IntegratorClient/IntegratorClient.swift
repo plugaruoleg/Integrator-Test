@@ -7,7 +7,15 @@
 //
 
 import Foundation
+
+#if canImport(IntegratorDefaults)
 import IntegratorDefaults
+#else
+// Fallback shim if the IntegratorDefaults module is not present.
+enum IntegratorDefaults {
+    static var integrationSessionStart: Date = Date()
+}
+#endif
 
 public class IntegratorClient {
     public static var shared = IntegratorClient()
@@ -56,12 +64,13 @@ extension IntegratorClient {
         .resume()
     }
     
-    public func get<T: Codable>(url: URL, _ type: T.Type, completion: @escaping (T?) -> Void) {
+    public func get<T: Codable>(url: URL, _ : T.Type, completion: @escaping (T?) -> Void) {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         
-        session.dataTask(with: request) { [weak self] data, _, error in
-            completion(self?.decode(data: data, type))
+        session.dataTask(with: request) { data, _, _ in
+            let decoded: T? = IntegratorClient.decode(data: data)
+            completion(decoded)
         }
         .resume()
     }
@@ -70,6 +79,7 @@ extension IntegratorClient {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = parameters.data
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         session.dataTask(with: request) { _, _, _ in
             completion()
@@ -80,23 +90,25 @@ extension IntegratorClient {
     public func post<T: Codable>(
         url: URL,
         parameters: [String: Any],
-        _ type: T.Type,
+        _ : T.Type,
         completion: @escaping (T?) -> Void
     ) {
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
         request.httpBody = parameters.data
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        session.dataTask(with: request) { [weak self] data, _, error in
-            completion(self?.decode(data: data, type))
+        session.dataTask(with: request) { data, _, _ in
+            let decoded: T? = IntegratorClient.decode(data: data)
+            completion(decoded)
         }
         .resume()
     }
     
-    private func decode<T: Codable>(data: Data?, _ type: T.Type) -> T? {
+    private static func decode<T: Codable>(data: Data?) -> T? {
         guard let data else { return nil }
         do {
-            let decoded = try JSONDecoder().decode(type, from: data)
+            let decoded = try JSONDecoder().decode(T.self, from: data)
             return decoded
         } catch {
             debugPrint(error.localizedDescription)
