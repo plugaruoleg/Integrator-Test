@@ -57,9 +57,10 @@ let package = Package(
             path: "Sources/IntegratorDefaults"
         ),
         .target(
-            name: "IntegratorClient",
-            path: "Sources/IntegratorClient"
-        ),
+              name: "IntegratorClient",
+              dependencies: ["IntegratorDefaults"],
+              path: "Sources/IntegratorClient"
+          ),
         .target(
             name: "Integrator",
             dependencies: [
